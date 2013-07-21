@@ -1,0 +1,15 @@
+Euskal Encounter 21
+AI Contest
+Motor del juego
+
+Autor: marcan <marcan@euskalencounter.org>
+Licencia: GPLv2/v3
+
+Requisitos:
+	Python v2.6.x o v2.7.x
+		# apt-get install python2.7
+	PyGame
+		# apt-get install python-pygame
+
+Uso:
+$ python2.7 engine/game.py maps/<mapa.txt> 'comando player0' 'comando player1'...
