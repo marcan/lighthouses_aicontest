@@ -87,15 +87,16 @@ class GameView(object):
         cplayers = [i for i in self.game.players if i.pos == (cx, cy)]
         if cplayers:
             nx = int(math.ceil(math.sqrt(len(cplayers))))
-            wx = 12 // nx
+            wx = (CELL - 4) / nx
             ny = int(math.ceil(len(cplayers)/nx))
-            wy = 12 // ny
+            wy = (CELL - 4) / ny
             for i, player in enumerate(cplayers):
                 iy = i // nx
                 ix = i % nx
                 color = self.cmul(PLAYERC[player.num], 0.5)
-                self._afill((px + 2 + ix * wx, py + 2 + iy * wy),
-                            (wx - 1, wy - 1), color)
+                sx, sy = int(px + 2 + ix * wx), int(py + 2 + iy * wy)
+                ex, ey = int(px + 2 + (ix + 1) * wx), int(py + 2 + (iy + 1) * wy)
+                self._afill((sx, sy), (ex - sx, ey - sy), color)
 
         if (cx, cy) in self.game.lighthouses:
             lh = self.game.lighthouses[cx, cy]
