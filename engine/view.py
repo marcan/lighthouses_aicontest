@@ -42,8 +42,9 @@ class GameView(object):
         y0 *= self.scale
         x1 *= self.scale
         y1 *= self.scale
-        for i in range(self.scale):
-            pygame.draw.aaline(self.arena, c, (x0+i, y0+i), (x1+i, y1+i))
+        for dx in range(self.scale):
+            for dy in range(self.scale):
+                pygame.draw.line(self.arena, c, (x0+dx, y0+dy), (x1+dx, y1+dy))
 
     def _diamond(self, pos, size, c, width=0):
         cx, cy = pos
