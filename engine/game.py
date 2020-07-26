@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys, time
 import engine, botplayer
@@ -7,6 +7,7 @@ import view
 cfg_file = sys.argv[1]
 bots = sys.argv[2:]
 DEBUG = False
+CONTINUE_ON_ERROR = False
 
 config = engine.GameConfig(cfg_file)
 game = engine.Game(config, len(bots))
@@ -22,13 +23,20 @@ while True:
     game.pre_round()
     view.update()
     for actor in actors:
-        actor.turn()
+        try:
+            actor.turn()
+        except botplayer.CommError as e:
+            if not CONTINUE_ON_ERROR:
+                raise
+            else:
+                print("CommError: " + str(e))
+                actor.close()
         view.update()
     game.post_round()
-    print "########### ROUND %d SCORE:" % round,
+    s = "########### ROUND %d SCORE: " % round
     for i in range(len(bots)):
-        print "P%d: %d" % (i, game.players[i].score),
-    print
+        s += "P%d: %d " % (i, game.players[i].score)
+    print(s)
     round += 1
 
 view.update()

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import math
 
 def dist(a, b):
@@ -33,8 +33,8 @@ def render(points):
     x1 = max(v0[0], v1[0], v2[0])
     y0 = min(v0[1], v1[1], v2[1])
     y1 = max(v0[1], v1[1], v2[1])
-    for y in xrange(y0, y1+1):
-        for x in xrange(x0, x1+1):
+    for y in range(y0, y1+1):
+        for x in range(x0, x1+1):
             p = x, y
             w0 = orient2d(v1, v2, p) + _bias(v1, v2)
             w1 = orient2d(v2, v0, p) + _bias(v2, v0)
@@ -52,8 +52,8 @@ def _rendertest(points):
     for i,(x,y) in enumerate(points):
         s[y][x] = ("ABC","abc")[s[y][x] == "."][i]
     for l in s[::-1]:
-        print "".join(l)
-    print
+        print("".join(l))
+    print()
 
 if __name__ == "__main__":
     assert orient2d((0,0),(0,1),(1,0)) < 0

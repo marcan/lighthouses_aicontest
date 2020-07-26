@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-import json, subprocess, time, select, sys
+import json, subprocess, time, select, sys, os, fcntl
 import engine
 
 class CommError(Exception):
@@ -13,17 +13,19 @@ class BotPlayer(object):
     def __init__(self, game, playernum, cmdline, debug=False):
         self.alive = True
         self.p = subprocess.Popen(cmdline, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+        flag = fcntl.fcntl(self.p.stdout.fileno(), fcntl.F_GETFD)
+        fcntl.fcntl(self.p.stdout.fileno(), fcntl.F_SETFL, flag | os.O_NONBLOCK)
         self.game = game
         self.player = game.players[playernum]
         self.debug = debug
 
     def _send(self, data):
-        line = json.dumps(data)
-        assert "\n" not in line
+        line = json.dumps(data).encode("ascii")
+        assert b"\n" not in line
         if self.debug:
-            print ">>P%d: %r" % (self.player.num, line)
+            print(">>P%d: %r" % (self.player.num, line))
         try:
-            self.p.stdin.write(line + "\n")
+            self.p.stdin.write(line + b"\n")
             self.p.stdin.flush()
         except:
             raise CommError("Error sending data")
@@ -32,20 +34,24 @@ class BotPlayer(object):
         st = time.time()
         et = time.time() + soft_timeout
         ht = time.time() + hard_timeout
-        line = ""
+        line = b""
         try:
-            while not line or line[-1] != "\n":
-                r,w,e = select.select([self.p.stdout],[],[],ht - time.time())
+            while not line or line[-1] != 10:
+                to = max(0, ht - time.time())
+                r,w,e = select.select([self.p.stdout],[],[],to)
                 if self.p.stdout not in r:
                     raise CommError("Bot %r over hard timeout" % self.player.name)
-                line += self.p.stdout.read(1)
+                c = os.read(self.p.stdout.fileno(), 1)
+                if not c:
+                    raise CommError("Bot closed stdout")
+                line += c
         except Exception as e:
             raise CommError("Unknown error: %r" % e)
         if time.time() > et:
             sys.stderr.write("Bot %r over soft timeout\n" % self.player.name)
         try:
             if self.debug:
-                print "<<P%d: %r" % (self.player.num, line)
+                print("<<P%d: %r" % (self.player.num, line))
             return json.loads(line)
         except Exception as e:
             raise CommError("Invalid JSON: %r" % e)
@@ -58,12 +64,12 @@ class BotPlayer(object):
             "player_count": len(self.game.players),
             "position": self.player.pos,
             "map": self.game.island.map,
-            "lighthouses": self.game.lighthouses.keys(),
+            "lighthouses": list(self.game.lighthouses.keys()),
         })
         reply = self._recv(self.INIT_TIMEOUT, self.INIT_TIMEOUT)
         if not (isinstance(reply, dict) and
                 "name" in reply and
-                isinstance(reply["name"], basestring)):
+                isinstance(reply["name"], str)):
             raise CommError("Bot did not greet with name")
         self.player.name = reply["name"]
 
@@ -71,8 +77,8 @@ class BotPlayer(object):
         if not self.alive:
             return
         lighthouses = []
-        for lh in self.game.lighthouses.itervalues():
-            connections = [(l for l in c if l is not lh.pos).next()
+        for lh in self.game.lighthouses.values():
+            connections = [next(l for l in c if l is not lh.pos)
                             for c in self.game.conns if lh.pos in c]
             lighthouses.append({
                 "position": lh.pos,
@@ -99,7 +105,7 @@ class BotPlayer(object):
                     raise engine.MoveError("Move command requires x, y")
                 self.player.move((move["x"], move["y"]))
             elif move["command"] == "attack":
-                if "energy" not in move or not isinstance(move["energy"], (long, int)):
+                if "energy" not in move or not isinstance(move["energy"], int):
                     raise engine.MoveError("Attack command requires integer energy")
                 if self.player.pos not in self.game.lighthouses:
                     raise engine.MoveError("Player must be located at target lighthouse")
@@ -118,7 +124,7 @@ class BotPlayer(object):
             self._send({"success": True})
         except engine.MoveError as e:
             #sys.stderr.write("Bot %r move error: %s\n" % (self.player.name, e.message))
-            self._send({"success": False, "message": e.message})
+            self._send({"success": False, "message": str(e)})
 
     def close(self):
         if self.alive:

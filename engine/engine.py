@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import geom, math
 
@@ -15,12 +15,12 @@ class Island(object):
         self._island = island_map
         self.h = len(self._island)
         self.w = len(self._island[0])
-        self._energymap = [[0] * self.w for i in xrange(self.h)]
+        self._energymap = [[0] * self.w for i in range(self.h)]
         self._horizonmap = []
         dist = self.HORIZON
-        for y in xrange(-dist, dist + 1):
+        for y in range(-dist, dist + 1):
             row = []
-            for x in xrange(-dist, dist + 1):
+            for x in range(-dist, dist + 1):
                 row.append(geom.dist((0,0), (x,y)) <= self.HORIZON)
             self._horizonmap.append(row)
 
@@ -55,9 +55,9 @@ class Island(object):
         px, py = pos
         dist = self.HORIZON
         view = []
-        for y in xrange(-dist, dist + 1):
+        for y in range(-dist, dist + 1):
             row = []
-            for x in xrange(-dist, dist + 1):
+            for x in range(-dist, dist + 1):
                 if self._horizonmap[y+dist][x+dist]:
                     row.append(self.energy[px+x, py+y])
                 else:
@@ -77,7 +77,7 @@ class Lighthouse(object):
         self.energy = 0
 
     def attack(self, player, strength):
-        if not isinstance(strength, (int, long)):
+        if not isinstance(strength, int):
             raise MoveError("Strength must be an int")
         if strength < 0:
             raise MoveError("Strength must be positive")
@@ -98,7 +98,7 @@ class Lighthouse(object):
             self.energy = 0
             self.owner = None
             self.game.conns = set(i for i in self.game.conns if self.pos not in i)
-            self.game.tris = dict(i for i in self.game.tris.iteritems() if self.pos not in i[0])
+            self.game.tris = dict(i for i in self.game.tris.items() if self.pos not in i[0])
 
 class Player(object):
     def __init__(self, game, num, init_pos):
@@ -191,7 +191,7 @@ class Game(object):
             if geom.intersect(tuple(c), (orig.pos, dest.pos)):
                 raise MoveError("Connection cannot intersect another connection")
             if orig.pos in c:
-                third = (l for l in c if l != orig.pos).next()
+                third = next(l for l in c if l != orig.pos)
                 if frozenset((third, dest.pos)) in self.conns:
                     new_tris.add((orig.pos, dest.pos, third))
 
@@ -202,8 +202,8 @@ class Game(object):
 
     def pre_round(self):
         for pos in self.lighthouses:
-            for y in xrange(pos[1]-self.RDIST+1, pos[1]+self.RDIST):
-                for x in xrange(pos[0]-self.RDIST+1, pos[0]+self.RDIST):
+            for y in range(pos[1]-self.RDIST+1, pos[1]+self.RDIST):
+                for x in range(pos[0]-self.RDIST+1, pos[0]+self.RDIST):
                     dist = geom.dist(pos, (x,y))
                     delta = int(math.floor(self.RDIST - dist))
                     if delta > 0:
@@ -216,19 +216,19 @@ class Game(object):
                 player_posmap[player.pos] = [player]
             if player.pos in self.lighthouses:
                 player.keys.add(player.pos)
-        for pos, players in player_posmap.iteritems():
+        for pos, players in player_posmap.items():
             energy = self.island.energy[pos] // len(players)
             for player in players:
                 player.energy += energy
             self.island.energy[pos] = 0
-        for lh in self.lighthouses.itervalues():
+        for lh in self.lighthouses.values():
             lh.decay(10)
 
     def post_round(self):
-        for lh in self.lighthouses.itervalues():
+        for lh in self.lighthouses.values():
             if lh.owner is not None:
                 self.players[lh.owner].score += 2
         for pair in self.conns:
-            self.players[self.lighthouses[iter(pair).next()].owner].score += 2
-        for tri, cells in self.tris.iteritems():
+            self.players[self.lighthouses[next(iter(pair))].owner].score += 2
+        for tri, cells in self.tris.items():
             self.players[self.lighthouses[tri[0]].owner].score += len(cells)
