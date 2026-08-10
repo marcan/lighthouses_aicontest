@@ -1,8 +1,7 @@
 #!/usr/bin/python3
-
-import sys, time
+import sys, time, os
 import engine, botplayer
-import view
+from view.api import get_game_view
 
 cfg_file = sys.argv[1]
 bots = sys.argv[2:]
@@ -16,12 +15,12 @@ actors = [botplayer.BotPlayer(game, i, cmdline, debug=DEBUG) for i, cmdline in e
 for actor in actors:
     actor.initialize()
 
-view = view.GameView(game)
+view = get_game_view(game)
 
 round = 0
 while True:
     game.pre_round()
-    view.update()
+    view.update(round)
     for actor in actors:
         try:
             actor.turn()
@@ -31,12 +30,14 @@ while True:
             else:
                 print("CommError: " + str(e))
                 actor.close()
-        view.update()
+        view.update(round)
     game.post_round()
     s = "########### ROUND %d SCORE: " % round
     for i in range(len(bots)):
         s += "P%d: %d " % (i, game.players[i].score)
     print(s)
     round += 1
+    if round >= int(os.getenv('AICONTEST_MAX_ROUNDS', '500')):
+        break
 
-view.update()
+view.update(round)

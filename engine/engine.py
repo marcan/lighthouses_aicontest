@@ -8,6 +8,23 @@ class MoveError(Exception):
 class GameError(Exception):
     pass
 
+class _Energy(object):
+    def __init__(self, island):
+        self.island = island
+    def __getitem__(self, pos):
+        x, y = pos
+        if self.island[pos]:
+            return self.island._energymap[y][x]
+        else:
+            return 0
+    def __setitem__(self, pos, val):
+        x, y = pos
+        if val > self.island.MAX_ENERGY:
+            val = self.island.MAX_ENERGY
+        assert val >= 0
+        if self.island[pos]:
+            self.island._energymap[y][x] = val
+
 class Island(object):
     MAX_ENERGY = 100
     HORIZON = 3
@@ -23,22 +40,7 @@ class Island(object):
             for x in range(-dist, dist + 1):
                 row.append(geom.dist((0,0), (x,y)) <= self.HORIZON)
             self._horizonmap.append(row)
-
-        class _Energy(object):
-            def __getitem__(unused, pos):
-                x, y = pos
-                if self[pos]:
-                    return self._energymap[y][x]
-                else:
-                    return 0
-            def __setitem__(unused, pos, val):
-                x, y = pos
-                if val > self.MAX_ENERGY:
-                    val = self.MAX_ENERGY
-                assert val >= 0
-                if self[pos]:
-                    self._energymap[y][x] = val
-        self._energy = _Energy()
+        self._energy = _Energy(self)
 
     def __getitem__(self, pos):
         x, y = pos
@@ -73,7 +75,7 @@ class Lighthouse(object):
     def __init__(self, game, pos):
         self.game = game
         self.pos = pos
-        self.owner = None
+        self.owner = -1
         self.energy = 0
 
     def attack(self, player, strength):
@@ -84,7 +86,7 @@ class Lighthouse(object):
         if strength > player.energy:
             strength = player.energy
         player.energy -= strength
-        if self.owner is not None and self.owner != player.num:
+        if self.owner != -1 and self.owner != player.num:
             d = min(self.energy, strength)
             self.decay(d)
             strength -= d
@@ -96,7 +98,7 @@ class Lighthouse(object):
         self.energy -= by
         if self.energy <= 0:
             self.energy = 0
-            self.owner = None
+            self.owner = -1
             self.game.conns = set(i for i in self.game.conns if self.pos not in i)
             self.game.tris = dict(i for i in self.game.tris.items() if self.pos not in i[0])
 
@@ -226,7 +228,7 @@ class Game(object):
 
     def post_round(self):
         for lh in self.lighthouses.values():
-            if lh.owner is not None:
+            if lh.owner != -1:
                 self.players[lh.owner].score += 2
         for pair in self.conns:
             self.players[self.lighthouses[next(iter(pair))].owner].score += 2

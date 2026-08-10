@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import pygame, sys, time, math
+from view.api import GameView
 
 CELL = 15
 
@@ -14,9 +15,9 @@ PLAYERC = [
     (255, 127, 127),
 ]
 
-class GameView(object):
+class PygameView(GameView):
     def __init__(self, game):
-        self.game = game
+        super().__init__(game)
         pygame.init()
         size = width, height = 640, 480
         self.screen = pygame.display.set_mode(size)
@@ -102,11 +103,11 @@ class GameView(object):
         if (cx, cy) in self.game.lighthouses:
             lh = self.game.lighthouses[cx, cy]
             color = (192, 192, 192)
-            if lh.owner is not None:
+            if lh.owner != -1:
                 color = PLAYERC[lh.owner]
             self._diamond((px + CELL//2, py + CELL//2), 4, color, 0)
 
-    def update(self):
+    def update(self, game_round):
         self.arena.fill((0, 0, 0))
         for cy in range(self.game.island.h):
             for cx in range(self.game.island.w):

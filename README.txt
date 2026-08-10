@@ -432,7 +432,7 @@ Al término del juego, el motor simplemente cierra stdin y stdout. El bot debe
 cerrarse correctamente al detectar una condición de EOF en stdin.
 
 
-En resumen, las comunicaciones con el bot siguien la siguiente progresión:
+En resumen, las comunicaciones con el bot siguen la siguiente progresión:
 << Inicialización (mapa, faros, etc.)
 >> Hello (nombre del bot)
 << Estado al comienzo del turno (faros, conexiones, energía, etc.)
